@@ -785,6 +785,14 @@
       (let [team-id (:current-team-id state)]
         (rx/of (rt/nav :dashboard-team-members {:team-id team-id}))))))
 
+(defn go-to-team-invitations
+  []
+  (ptk/reify ::go-to-team-invitations
+    ptk/WatchEvent
+    (watch [_ state _]
+      (let [team-id (:current-team-id state)]
+        (rx/of (rt/nav :dashboard-team-invitations {:team-id team-id}))))))
+
 (defn go-to-team-settings
   []
   (ptk/reify ::go-to-team-settings

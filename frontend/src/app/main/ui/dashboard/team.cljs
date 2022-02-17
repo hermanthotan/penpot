@@ -27,33 +27,42 @@
    [cljs.spec.alpha :as s]
    [rumext.alpha :as mf]))
 
+;; TEAM SECTION
+
 (mf/defc header
   {::mf/wrap [mf/memo]}
   [{:keys [section team] :as props}]
-  (let [go-members        (st/emitf (dd/go-to-team-members))
-        go-settings       (st/emitf (dd/go-to-team-settings))
-        invite-member     (st/emitf (modal/show {:type ::invite-member :team team}))
-        members-section?  (= section :dashboard-team-members)
-        settings-section? (= section :dashboard-team-settings)
-        permissions       (:permissions team)]
+  (let [go-members           (st/emitf (dd/go-to-team-members))
+        go-settings          (st/emitf (dd/go-to-team-settings))
+        go-invitations       (st/emitf (dd/go-to-team-invitations))
+        invite-member        (st/emitf (modal/show {:type ::invite-member :team team}))
+        members-section?     (= section :dashboard-team-members)
+        settings-section?    (= section :dashboard-team-settings)
+        invitations-section? (= section :dashboard-team-invitations)
+        permissions          (:permissions team)]
 
-    [:header.dashboard-header
+    [:header.dashboard-header.team
      [:div.dashboard-title
       [:h1 (cond
              members-section? (tr "labels.members")
              settings-section? (tr "labels.settings")
+             invitations-section? (tr "labels.invitations")
              :else nil)]]
-     [:nav
-      [:ul
+     [:nav.dashboard-header-menu
+      [:ul.dashboard-header-options
        [:li {:class (when members-section? "active")}
         [:a {:on-click go-members} (tr "labels.members")]]
+       [:li {:class (when invitations-section? "active")}
+        [:a {:on-click go-invitations} (tr "labels.invitations")]]
        [:li {:class (when settings-section? "active")}
         [:a {:on-click go-settings} (tr "labels.settings")]]]]
-
-     (if (and members-section? (:is-admin permissions))
-       [:a.btn-secondary.btn-small {:on-click invite-member :data-test "invite-member"}
-        (tr "dashboard.invite-profile")]
-       [:div])]))
+     [:div.dashboard-buttons
+           (if (and (or invitations-section? members-section?) (:is-admin permissions))
+             [:a.btn-secondary.btn-small {:on-click invite-member :data-test "invite-member"}
+              (tr "dashboard.invite-profile")]
+             [:div.blank-space])
+      ]
+]))
 
 (defn get-available-roles
   [permissions]
@@ -124,6 +133,8 @@
       [:div.action-buttons
        [:& fm/submit-button {:label (tr "modals.invite-member-confirm.accept")}]]]]))
 
+;; TEAM MEMBERS SECTION
+
 (mf/defc member-info [{:keys [member profile] :as props}]
   (let [is-you? (= (:id profile) (:id member))]
     [:*
@@ -156,7 +167,7 @@
        [:div.rol-selector.has-priv
         [:span.rol-label (tr role)]
         [:span.icon {:on-click #(reset! show? true)} i/arrow-down]]
-       [::div.rol-selector
+       [:div.rol-selector
         [:span.rol-label (tr role)]])
 
      [:& dropdown {:show @show?
@@ -312,10 +323,10 @@
                      (remove :is-owner))
         owner   (->> (vals members-map)
                      (d/seek :is-owner))]
-    [:div.dashboard-table
+    [:div.dashboard-table.team-members
      [:div.table-header
       [:div.table-field.name (tr "labels.member")]
-      [:div.table-field.permissions (tr "labels.role")]]
+      [:div.table-field.role (tr "labels.role")]]
      [:div.table-rows
       [:& team-member {:member owner :team team :profile profile :members members-map}]
       (for [item members]
@@ -343,7 +354,129 @@
      [:section.dashboard-container.dashboard-team-members
       [:& team-members {:profile profile
                         :team team
-                        :members-map members-map}]]]))
+                        :members-map members-map}]
+      ]]))
+
+;; INVITATIONS SECTION
+
+(mf/defc invitation-role-selector
+  [{:keys [can-invite? role change-to-admin change-to-editor] :as props}]
+  (let [show? (mf/use-state false)]
+    [:*
+     (if can-invite?
+       [:div.rol-selector.has-priv
+        [:span.rol-label (tr role)]
+        [:span.icon {:on-click #(reset! show? true)} i/arrow-down]]
+       [:div.rol-selector
+        [:span.rol-label (tr role)]])
+
+     [:& dropdown {:show @show?
+                   :on-close #(reset! show? false)}
+      [:ul.dropdown.options-dropdown
+       [:li {:on-click change-to-admin} (tr "labels.admin")]
+       [:li {:on-click change-to-editor} (tr "labels.editor")]
+        ;; Temporarily disabled viewer role
+        ;; https://tree.taiga.io/project/uxboxproject/issue/1083
+        ;;  [:li {:on-click set-viewer} (tr "labels.viewer")]
+       ]]]))
+
+(mf/defc invitation-status-badge
+  [{:keys [status] :as props}]
+  (let [status-label (if (= status :expired)
+                       (tr "labels.expired-invitation")
+                       (tr "labels.pending-invitation"))]
+    [:div.status-badge {:class (dom/classnames
+                                :expired (= status :expired)
+                                :pending (= status :pending))}
+     [:span.status-label (tr status-label)]]))
+
+(mf/defc invitation-actions [{:keys [can-modify? delete resend] :as props}]
+  (let [show? (mf/use-state false)]
+    (when can-modify?
+      [:*
+       [:span.icon {:on-click #(reset! show? true)} [i/actions]]
+       [:& dropdown {:show @show?
+                     :on-close #(reset! show? false)}
+        [:ul.dropdown.actions-dropdown
+         [:li {:on-click resend} (tr "labels.resend-invitation")]
+         [:li {:on-click delete} (tr "labels.delete-invitation")]]]])))
+
+(mf/defc invitation-row
+  [{:keys [invitation can-invite?] :as props}]
+  (let [expired?        (:expired invitation)
+        email           (:email invitation)
+        invitation-role (:role invitation)
+        status          (if expired?
+                          :expired
+                          :pending)
+
+        change-to-admin ()
+        change-to-editor ()
+        delete-invitation ()
+        resend-invitation ()
+        ]
+    [:div.table-row
+     [:div.table-field.mail email]
+     [:div.table-field.roles [:& invitation-role-selector {:can-invite? can-invite?
+                                                           :role invitation-role
+                                                           :change-to-editor change-to-editor
+                                                           :change-to-admin change-to-admin}]]
+     [:div.table-field.status [:& invitation-status-badge {:status status}]]
+     [:div.table-field.actions [:& invitation-actions {:can-modify? can-invite? :delete delete-invitation :resend resend-invitation}]]]))
+
+(mf/defc empty-invitation-table [can-invite?]
+  [:div.empty-invitations
+   [:span (tr "labels.no-invitations")]
+   (when (:can-invite? can-invite?) [:span (tr "labels.no-invitations-hint")])])
+
+(mf/defc invitation-section
+  [{:keys [team] :as props}]
+  (let [invitations [{:email "example@email.com" :role "Editor" :expired false}
+                     {:email "example2@email.com" :role "Admin" :expired false}
+                     {:email "example3@email.com" :role "Editor" :expired true}]
+        invitations2 []
+        owner? (get-in team [:permissions :is-owner])
+        admin? (get-in team [:permissions :is-admin])
+        can-invite? (or owner? admin?)]
+
+    [:div.dashboard-table.invitations
+     [:div.table-header
+      [:div.table-field.name (tr "labels.invitations")]
+      [:div.table-field.role (tr "labels.role")]
+      [:div.table-field.status (tr "labels.status")]]
+           (if (= 0 (count invitations2))
+             [:& empty-invitation-table {:can-invite? can-invite?}]
+             [:div.table-rows
+              (for [invitation invitations]
+                [:& invitation-row {:invitation invitation :can-invite? can-invite?}])]
+             )
+     ]))
+
+(mf/defc team-invitations-page
+  [{:keys [team profile] :as props}]
+  (let [members-map (mf/deref refs/dashboard-team-members)]
+
+    (mf/use-effect
+     (mf/deps team)
+     (fn []
+       (dom/set-html-title
+        (tr "title.team-members"
+            (if (:is-default team)
+              (tr "dashboard.your-penpot")
+              (:name team))))))
+
+    (mf/use-effect
+     (st/emitf (dd/fetch-team-members)))
+
+    [:*
+     [:& header {:section :dashboard-team-invitations
+                 :team team}]
+     [:section.dashboard-container.dashboard-team-invitations
+      [:& invitation-section {:profile profile
+                              :team team
+                              :members-map members-map}]]]))
+
+;; SETTINGS SECTION
 
 (mf/defc team-settings-page
   [{:keys [team] :as props}]
