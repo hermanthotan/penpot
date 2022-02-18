@@ -74,7 +74,7 @@
      [:& team-members-page {:team team :profile profile}]
 
      :dashboard-team-invitations
-     [:& team-invitations-page {:team team :profile profile}]
+     [:& team-invitations-page {:team team}]
 
      :dashboard-team-settings
      [:& team-settings-page {:team team :profile profile}]

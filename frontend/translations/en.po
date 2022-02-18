@@ -1869,6 +1869,10 @@ msgid "title.team-members"
 msgstr "Members - %s - Penpot"
 
 #: src/app/main/ui/dashboard/team.cljs
+msgid "title.team-invitations"
+msgstr "Invitations - %s - Penpot"
+
+#: src/app/main/ui/dashboard/team.cljs
 msgid "title.team-settings"
 msgstr "Settings - %s - Penpot"
 
