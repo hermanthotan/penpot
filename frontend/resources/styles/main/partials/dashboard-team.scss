@@ -40,8 +40,9 @@
   }
 }
 
-.dashboard-team-members,.dashboard-team-invitations {
-  .empty-invitations{
+.dashboard-team-members,
+.dashboard-team-invitations {
+  .empty-invitations {
     height: 156px;
     max-width: 1040px;
     width: 100%;
@@ -100,6 +101,7 @@
       .rol-selector {
         &.has-priv {
           border: 1px solid $color-gray-20;
+          cursor: pointer;
         }
         min-width: 160px;
         height: 32px;

@@ -91,7 +91,8 @@
                              :initial initial)
         on-success
         (st/emitf (dm/success (tr "notifications.invitation-email-sent"))
-                  (modal/hide))
+                  (modal/hide)
+                  (dd/fetch-team-invitations))
 
         on-error
         (fn [form {:keys [type code] :as error}]
@@ -166,9 +167,9 @@
         ]
     [:*
      (if (and can-change-rol? not-superior? (not (and is-you? you-owner?)))
-       [:div.rol-selector.has-priv
+       [:div.rol-selector.has-priv  {:on-click #(reset! show? true)}
         [:span.rol-label (tr role)]
-        [:span.icon {:on-click #(reset! show? true)} i/arrow-down]]
+        [:span.icon i/arrow-down]]
        [:div.rol-selector
         [:span.rol-label (tr role)]])
 
@@ -364,9 +365,9 @@
   (let [show? (mf/use-state false)]
     [:*
      (if can-invite?
-       [:div.rol-selector.has-priv
+       [:div.rol-selector.has-priv {:on-click #(reset! show? true)}
         [:span.rol-label (tr role)]
-        [:span.icon {:on-click #(reset! show? true)} i/arrow-down]]
+        [:span.icon i/arrow-down]]
        [:div.rol-selector
         [:span.rol-label (tr role)]])
 
@@ -412,9 +413,9 @@
                             :pending)
 
         on-success
-        #(st/emit! (dd/fetch-team-invitations)
-                   (dm/success (tr "notifications.invitation-email-sent"))
-                   (modal/hide))
+        #(st/emit! (dm/success (tr "notifications.invitation-email-sent"))
+                   (modal/hide)
+                   (dd/fetch-team-invitations))
 
 
         on-error
@@ -442,7 +443,6 @@
                                   mdata  {:on-success on-success}]
                               (st/emit! (dd/invite-team-member (with-meta params mdata)))
                               (st/emit! (dd/fetch-team-invitations))))]
-    (.log js/console (clj->js invitation))
     [:div.table-row
      [:div.table-field.mail email]
      [:div.table-field.roles [:& invitation-role-selector {:can-invite? can-invite?
