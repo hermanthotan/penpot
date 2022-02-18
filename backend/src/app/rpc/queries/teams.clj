@@ -238,7 +238,8 @@
   (s/keys :req-un [::profile-id ::team-id]))
 
 (def sql:team-invitations
-  "select email_to as email, role, (valid_until < now()) as expired from team_invitation where team_id = ?")
+  "select email_to as email, role, (valid_until < now()) as expired 
+   from team_invitation where team_id = ? order by valid_until desc")
 
 
 (sv/defmethod ::team-invitations

@@ -451,3 +451,22 @@
                   {:role (name role) :updated-at (dt/now)}
                   {:team-id (:id team) :email-to (str/lower email)})
       nil)))
+
+;; --- Mutation: Delete invitation role
+
+(s/def ::delete-team-invitation
+  (s/keys :req-un [::profile-id ::team-id ::email]))
+
+(sv/defmethod ::delete-team-invitation
+  [{:keys [pool] :as cfg} {:keys [profile-id team-id email] :as params}]
+  (db/with-atomic [conn pool]
+    (let [perms    (teams/get-permissions conn profile-id team-id)
+          team     (db/get-by-id conn :team team-id)]
+
+      (when-not (:is-admin perms)
+        (ex/raise :type :validation
+                  :code :insufficient-permissions))
+
+      (db/delete! conn :team-invitation
+                {:team-id team-id :email-to (str/lower email)})
+      nil)))
