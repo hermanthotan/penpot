@@ -13,6 +13,7 @@
    [app.main.data.workspace.state-helpers :as wsh]
    [app.main.data.workspace.texts :as dwt]
    [app.main.repo :as rp]
+   [app.util.storage :refer [storage]]
    [beicon.core :as rx]
    [cljs.spec.alpha :as s]
    [potok.core :as ptk]))
@@ -24,6 +25,7 @@
       (assoc-in state [:workspace-local :color-for-rename] nil))))
 
 (declare rename-color-result)
+(declare set-current-colorpalette-selected!)
 
 (defn rename-color
   [file-id color-id name]
@@ -51,10 +53,11 @@
 
 (defn change-palette-selected
   "Change the library used by the general palette tool"
-  [selected]
+  [selected]  
   (ptk/reify ::change-palette-selected
     ptk/UpdateEvent
     (update [_ state]
+      (set-current-colorpalette-selected! selected)
       (-> state
           (assoc-in [:workspace-local :selected-palette] selected)))))
 
@@ -327,3 +330,19 @@
     (update [_ state]
       (-> state
           (assoc-in [:workspace-local :editing-stop] spot)))))
+
+(defn set-current-colorpalette-show!
+  [status]
+  (swap! storage assoc ::colorpalette-show status))
+
+(defn current-colorpalette-show?
+  []
+  (::colorpalette-show @storage))
+
+(defn set-current-colorpalette-selected!
+  [selected]
+  (swap! storage assoc ::colorpalette-selected selected))
+
+(defn get-current-colorpalette-selected
+  []
+  (or (::colorpalette-selected @storage) :recent))

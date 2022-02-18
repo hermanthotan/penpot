@@ -10,6 +10,7 @@
    [app.common.math :as mth]
    [app.common.media :as cm]
    [app.main.data.workspace :as dw]
+   [app.main.data.workspace.colors :as co]
    [app.main.data.workspace.shortcuts :as sc]
    [app.main.refs :as refs]
    [app.main.store :as st]
@@ -127,12 +128,15 @@
                      (st/emit! (dw/remove-layout-flags :colorpalette)
                                (dw/toggle-layout-flags :textpalette)))}
         "Ag"]
-       
+
        [:li.tooltip.tooltip-right
         {:alt (tr "workspace.toolbar.color-palette" (sc/get-tooltip :toggle-colorpalette))
          :class (when (contains? layout :colorpalette) "selected")
          :on-click (fn []
+                     (co/set-current-colorpalette-show! (not (contains? layout :colorpalette)))
                      (r/set-resize-type! :bottom)
                      (st/emit! (dw/remove-layout-flags :textpalette)
-                               (dw/toggle-layout-flags :colorpalette)))}
+                               (dw/toggle-layout-flags :colorpalette))
+                     )
+         }
         i/palette]]]]))

@@ -8,6 +8,7 @@
   (:require
    [app.main.data.messages :as dm]
    [app.main.data.workspace :as dw]
+   [app.main.data.workspace.colors :as dc]
    [app.main.data.workspace.persistence :as dwp]
    [app.main.refs :as refs]
    [app.main.store :as st]

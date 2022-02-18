@@ -26,6 +26,7 @@
    [app.main.data.messages :as dm]
    [app.main.data.workspace.bool :as dwb]
    [app.main.data.workspace.changes :as dch]
+   [app.main.data.workspace.colors :as dc]
    [app.main.data.workspace.common :as dwc]
    [app.main.data.workspace.drawing :as dwd]
    [app.main.data.workspace.fix-bool-contents :as fbc]
@@ -259,6 +260,7 @@
             (rx/observe-on :async))))))
 
 (declare go-to-page)
+
 (defn initialize-page
   [page-id]
   (us/assert ::us/uuid page-id)
@@ -283,7 +285,13 @@
             (assoc :current-page-id page-id)
             (assoc :trimmed-page (select-keys page [:id :name]))
             (assoc :workspace-local local)
-            (update-in [:route :params :query] assoc :page-id (str page-id)))))))
+            (update :workspace-layout
+                    #(if (dc/current-colorpalette-show?)
+                       (conj % :colorpalette)
+                       (disj % :colorpalette)))
+            (assoc-in [:workspace-local :selected-palette] (dc/get-current-colorpalette-selected))
+            (update-in [:route :params :query] assoc :page-id (str page-id)))
+        ))))
 
 (defn finalize-page
   [page-id]
