@@ -452,7 +452,7 @@
                   {:team-id (:id team) :email-to (str/lower email)})
       nil)))
 
-;; --- Mutation: Delete invitation role
+;; --- Mutation: Delete invitation
 
 (s/def ::delete-team-invitation
   (s/keys :req-un [::profile-id ::team-id ::email]))
